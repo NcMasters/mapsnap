@@ -1,30 +1,30 @@
 # 🗺️ MapSnap
 
-**MapSnap** er en moderne, open source Progressive Web App (PWA), der gør det muligt at bringe fysiske kort ind i den digitale verden. 
+**MapSnap** is a modern, open-source Progressive Web App (PWA) that allows you to bring physical maps into the digital world. 
 
-Tag et billede af et park-kort, en festivaloversigt eller et turistkort, læg det som et gennemsigtigt overlay oven på et interaktivt verdenskort, og se din egen live GPS-position direkte på det fotograferede kort.
+Take a photo of a park map, a festival overview, or a tourist map, overlay it as a transparent layer on an interactive digital map, and track your live GPS position directly on the photographed map.
 
-## ✨ Funktioner
-- 📸 **Billede-import:** Tag billeder med kameraet eller vælg fra dit galleri.
-- ✂️ **Avanceret Beskæring:** Professionelt beskæringsværktøj med drag-handles og mørk maske.
-- 🔄 **Præcis Alignment:** Justér overlayet med touch-gestures (pan, zoom, rotation) eller præcisions-skydere.
-- 🔒 **Kort-lås:** Lås dit billede fast til specifikke geografiske koordinater.
-- 📍 **Live GPS Tracking:** Se dig selv bevæge dig direkte på det fotograferede overlay.
-- 💾 **Offline Support:** Gem dine kort lokalt i browseren (IndexedDB) og brug dem uden internet (PWA).
-- 🌙 **Premium Design:** Mørkt tema med glas-morfisme (glassmorphism) og flydende animationer.
+## ✨ Features
+- 📸 **Image Import:** Take photos with your camera or select from your gallery.
+- ✂️ **Advanced Cropping:** Professional cropping tool with drag handles and a dark mask for precision.
+- 🔄 **Precise Alignment:** Adjust the overlay using touch gestures (pan, zoom, rotation) or precision sliders.
+- 🔒 **Map Lock:** Anchor your image to specific geographic coordinates.
+- 📍 **Live GPS Tracking:** See yourself moving directly on the photographed overlay.
+- 💾 **Offline Support:** Save your maps locally in the browser (IndexedDB) and use them without internet (PWA).
+- 🌙 **Premium Design:** Dark theme featuring glassmorphism and smooth animations.
 
-## 🛠️ Teknologier
+## 🛠️ Tech Stack
 - **Frontend:** HTML5, Vanilla CSS3, JavaScript (ES6+)
-- **Kort:** [Leaflet.js](https://leafletjs.com/) med CartoDB Dark Matter fliser
-- **Lagring:** IndexedDB via browseren
-- **PWA:** Service Workers og Web App Manifest
+- **Mapping:** [Leaflet.js](https://leafletjs.com/) with CartoDB Dark Matter tiles
+- **Storage:** IndexedDB (Local Browser Storage)
+- **PWA:** Service Workers and Web App Manifest
 
-## 🚀 Kør appen
-Da MapSnap er en PWA, kræver den ingen installation. Du skal blot åbne den i din browser på mobilen eller computeren.
+## 🚀 How to Use
+Since MapSnap is a PWA, it requires no installation. Simply open it in your browser on your mobile device or computer.
 
-1. Gå til siden (indsæt link her).
-2. Tryk på "+" for at tilføje dit første kort.
-3. Justér det, så det passer med virkeligheden, og tryk på "Lås".
+1. Open the app (insert link here).
+2. Tap "+" to add your first map.
+3. Align it with the digital world and tap "Lock".
 
 ---
-*Dette projekt er 100% open source og bygget som et samarbejde mellem NcMasters og Antigravity.*
+*This project is 100% open source and built as a collaboration between NcMasters and Antigravity.*
