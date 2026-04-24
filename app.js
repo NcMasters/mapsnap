@@ -33,11 +33,130 @@ const savedMapsList = $('saved-maps-list');
 const toast = $('toast');
 const toastMsg = $('toast-message');
 
-// ============ INIT ============
+// ============ i18n ============
+const translations = {
+    en: {
+        controls_title: "Overlay Controls",
+        label_opacity: "Opacity",
+        label_rotation: "Rotation",
+        label_scale: "Scale",
+        btn_lock: "Lock overlay",
+        btn_unlock: "Unlock overlay",
+        btn_gps: "GPS Tracking",
+        btn_stop_gps: "Stop GPS",
+        btn_save: "Save map",
+        btn_delete: "Delete",
+        source_title: "Add map image",
+        source_desc: "Take a photo of a physical map or choose from your gallery.",
+        source_camera: "Camera",
+        source_gallery: "Gallery",
+        btn_cancel: "Cancel",
+        crop_title: "Crop image",
+        btn_use_image: "Use image",
+        drawer_title: "My maps",
+        section_language: "Language",
+        empty_state: "No saved maps yet",
+        empty_subtext: "Press + to add your first map",
+        toast_saved: "✅ Map saved!",
+        toast_deleted: "Map deleted",
+        toast_gps_started: "📍 GPS tracking active",
+        toast_gps_stopped: "GPS tracking stopped",
+        toast_gps_error: "⚠️ GPS error: ",
+        toast_gps_not_available: "⚠️ GPS not available",
+        toast_lock_required: "⚠️ Lock overlay first!",
+        toast_no_image: "⚠️ No image to save",
+        toast_load_success: "Map loaded",
+        toast_locked: "🔒 Overlay locked — map can now be moved",
+        toast_unlocked: "🔓 Overlay unlocked — align mode",
+        confirm_delete: "Are you sure you want to delete this map?",
+        map_name_prefix: "Map "
+    },
+    da: {
+        controls_title: "Overlay-kontroller",
+        label_opacity: "Gennemsigtighed",
+        label_rotation: "Rotation",
+        label_scale: "Skalering",
+        btn_lock: "Lås overlay",
+        btn_unlock: "Oplås overlay",
+        btn_gps: "GPS Tracking",
+        btn_stop_gps: "Stop GPS",
+        btn_save: "Gem kort",
+        btn_delete: "Slet",
+        source_title: "Tilføj kort-billede",
+        source_desc: "Tag et billede af et fysisk kort, eller vælg fra dit galleri.",
+        source_camera: "Kamera",
+        source_gallery: "Galleri",
+        btn_cancel: "Annuller",
+        crop_title: "Beskær billede",
+        btn_use_image: "Brug billede",
+        drawer_title: "Mine kort",
+        section_language: "Sprog",
+        empty_state: "Ingen gemte kort endnu",
+        empty_subtext: "Tryk + for at tilføje dit første kort",
+        toast_saved: "✅ Kort gemt!",
+        toast_deleted: "Kort slettet",
+        toast_gps_started: "📍 GPS tracking aktiv",
+        toast_gps_stopped: "GPS tracking stoppet",
+        toast_gps_error: "⚠️ GPS fejl: ",
+        toast_gps_not_available: "⚠️ GPS ikke tilgængelig",
+        toast_lock_required: "⚠️ Lås overlay først!",
+        toast_no_image: "⚠️ Intet billede at gemme",
+        toast_load_success: "Kort indlæst",
+        toast_locked: "🔒 Overlay låst — kortet kan nu flyttes",
+        toast_unlocked: "🔓 Overlay oplåst — justeringstilstand",
+        confirm_delete: "Er du sikker på, at du vil slette dette kort?",
+        map_name_prefix: "Kort "
+    }
+};
+
 function init() {
     initMap();
+    initEventListeners();
     initDB();
-    bindEvents();
+    setLanguage(state.currentLanguage);
+}
+
+function setLanguage(lang) {
+    state.currentLanguage = lang;
+    localStorage.setItem('mapsnap_lang', lang);
+    
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+            if (el.tagName === 'SPAN' || el.children.length === 0) {
+                el.textContent = translations[lang][key];
+            } else {
+                const span = el.querySelector('span');
+                if (span) span.textContent = translations[lang][key];
+                else {
+                    for (let node of el.childNodes) {
+                        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') {
+                            node.textContent = translations[lang][key];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    updateLockUI();
+    updateGPSUI();
+    renderSavedMaps();
+    
+    $('btn-lang-en').classList.toggle('active', lang === 'en');
+    $('btn-lang-da').classList.toggle('active', lang === 'da');
+}
+
+function updateGPSUI() {
+    const btn = $('btn-gps');
+    if (state.gps.active) {
+        btn.classList.add('active');
+        btn.querySelector('span').textContent = translations[state.currentLanguage].btn_stop_gps;
+    } else {
+        btn.classList.remove('active');
+        btn.querySelector('span').textContent = translations[state.currentLanguage].btn_gps;
+    }
 }
 
 function initMap() {
@@ -423,17 +542,17 @@ function onMouseMove(e) {
     if (!mouseDragging) return;
     state.overlay.x = state.touch.startOvX + (e.clientX - state.touch.startX);
     state.overlay.y = state.touch.startOvY + (e.clientY - state.touch.startY);
-    applyOverlayTransform();
-}
-
 function onMouseUp() { mouseDragging = false; }
 
 // ============ LOCK / UNLOCK ============
 function toggleLock() {
     state.overlay.locked = !state.overlay.locked;
+    updateLockUI();
+}
+
+function updateLockUI() {
     const btn = $('btn-lock');
     if (state.overlay.locked) {
-        // Store anchor: the lat/lng of the overlay center
         const mapSize = state.map.getSize();
         const cx = mapSize.x / 2 + state.overlay.x;
         const cy = mapSize.y / 2 + state.overlay.y;
@@ -442,13 +561,12 @@ function toggleLock() {
         state.overlay._baseScale = state.overlay.scale;
         overlayContainer.classList.remove('interactive');
         btn.classList.add('locked');
-        btn.querySelector('span').textContent = 'Oplås overlay';
-        // Re-enable map interaction
+        btn.querySelector('span').textContent = translations[state.currentLanguage].btn_unlock;
         state.map.dragging.enable();
         state.map.touchZoom.enable();
         state.map.doubleClickZoom.enable();
         state.map.scrollWheelZoom.enable();
-        showToast('🔒 Overlay låst — kortet kan nu flyttes');
+        showToast(translations[state.currentLanguage].toast_locked);
     } else {
         delete state.overlay._anchorLatLng;
         delete state.overlay._anchorZoom;
@@ -463,22 +581,21 @@ function toggleLock() {
 // ============ GPS ============
 function toggleGPS() {
     const btn = $('btn-gps');
+    const lang = state.currentLanguage;
     if (state.gps.active) {
         if (state.gps.watchId !== null) navigator.geolocation.clearWatch(state.gps.watchId);
         state.gps.active = false;
         state.gps.watchId = null;
         gpsMarker.classList.add('hidden');
-        btn.classList.remove('active');
-        btn.querySelector('span').textContent = 'GPS Tracking';
-        showToast('GPS tracking stoppet');
+        updateGPSUI();
+        showToast(translations[lang].toast_gps_stopped);
         return;
     }
-    if (!navigator.geolocation) { showToast('⚠️ GPS ikke tilgængelig'); return; }
-    if (!state.overlay.locked) { showToast('⚠️ Lås overlay først!'); return; }
+    if (!navigator.geolocation) { showToast(translations[lang].toast_gps_not_available); return; }
+    if (!state.overlay.locked) { showToast(translations[lang].toast_lock_required); return; }
     state.gps.active = true;
-    btn.classList.add('active');
-    btn.querySelector('span').textContent = 'Stop GPS';
-    showToast('📍 GPS tracking aktiv');
+    updateGPSUI();
+    showToast(translations[lang].toast_gps_started);
     state.gps.watchId = navigator.geolocation.watchPosition(
         pos => {
             state.gps.lat = pos.coords.latitude;
@@ -486,7 +603,7 @@ function toggleGPS() {
             state.gps.accuracy = pos.coords.accuracy;
             updateGPSMarker();
         },
-        err => { showToast('⚠️ GPS fejl: ' + err.message); },
+        err => { showToast(translations[lang].toast_gps_error + err.message); },
         { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
     );
 }
@@ -494,12 +611,10 @@ function toggleGPS() {
 function updateGPSMarker() {
     if (!state.gps.active || state.gps.lat === null) return;
     if (!state.overlay.locked || !state.overlay._anchorLatLng) return;
-    // Convert GPS position to screen pixel
     const screenPt = state.map.latLngToContainerPoint([state.gps.lat, state.gps.lng]);
     gpsMarker.classList.remove('hidden');
     gpsMarker.style.left = screenPt.x + 'px';
     gpsMarker.style.top = screenPt.y + 'px';
-    // Accuracy circle radius in pixels
     if (state.gps.accuracy) {
         const metersPerPixel = 40075016.686 * Math.cos(state.gps.lat * Math.PI / 180) / Math.pow(2, state.map.getZoom() + 8);
         const accPx = Math.max(20, state.gps.accuracy / metersPerPixel);
@@ -511,10 +626,11 @@ function updateGPSMarker() {
 
 // ============ SAVE / LOAD / DELETE ============
 async function saveOverlay() {
-    if (!state.overlay.imageData) { showToast('⚠️ Intet billede at gemme'); return; }
+    const lang = state.currentLanguage;
+    if (!state.overlay.imageData) { showToast(translations[lang].toast_no_image); return; }
     const center = state.map.getCenter();
     const data = {
-        name: 'Kort ' + new Date().toLocaleDateString('da-DK'),
+        name: translations[lang].map_name_prefix + new Date().toLocaleDateString(lang === 'da' ? 'da-DK' : 'en-US'),
         imageData: state.overlay.imageData,
         x: state.overlay.x,
         y: state.overlay.y,
@@ -534,13 +650,14 @@ async function saveOverlay() {
     try {
         const id = await dbSave(data);
         state.currentId = id || state.currentId;
-        showToast('✅ Kort gemt!');
+        showToast(translations[lang].toast_saved);
     } catch (e) {
-        showToast('⚠️ Kunne ikke gemme: ' + e);
+        showToast('⚠️ Error: ' + e);
     }
 }
 
 async function loadOverlay(id) {
+    const lang = state.currentLanguage;
     const all = await dbGetAll();
     const data = all.find(o => o.id === id);
     if (!data) return;
@@ -552,22 +669,18 @@ async function loadOverlay(id) {
     state.overlay.opacity = data.opacity;
     state.overlay.imageData = data.imageData;
     state.overlay.locked = false;
-    // Set map view
     state.map.setView(data.mapCenter, data.mapZoom, { animate: false });
     overlayImage.onload = () => {
         overlayImage.classList.add('visible');
         controlsPanel.classList.remove('hidden');
         syncSliders();
-        // If it was locked, re-lock with anchor
         if (data.locked && data.anchorLat != null) {
             applyOverlayTransform();
             state.overlay._anchorLatLng = L.latLng(data.anchorLat, data.anchorLng);
             state.overlay._anchorZoom = data.anchorZoom;
             state.overlay._baseScale = data.baseScale;
             state.overlay.locked = true;
-            overlayContainer.classList.remove('interactive');
-            $('btn-lock').classList.add('locked');
-            $('btn-lock').querySelector('span').textContent = 'Oplås overlay';
+            updateLockUI();
             updateOverlayPosition();
         } else {
             overlayContainer.classList.add('interactive');
@@ -575,12 +688,14 @@ async function loadOverlay(id) {
         }
     };
     overlayImage.src = data.imageData;
-    closeDrawer();
-    showToast('Kort indlæst');
+    hideDrawer();
+    showToast(translations[lang].toast_load_success);
 }
 
 async function deleteOverlay() {
+    const lang = state.currentLanguage;
     if (!state.overlay.imageData) return;
+    if (!confirm(translations[lang].confirm_delete)) return;
     if (state.currentId) {
         await dbDelete(state.currentId);
     }
@@ -593,11 +708,10 @@ async function deleteOverlay() {
     state.gps.active = false;
     state.overlay = { x: 0, y: 0, scale: 1, rotation: 0, opacity: 0.7, locked: false, imageData: null };
     state.currentId = null;
-    $('btn-lock').classList.remove('locked');
-    $('btn-lock').querySelector('span').textContent = 'Lås overlay';
-    $('btn-gps').classList.remove('active');
-    $('btn-gps').querySelector('span').textContent = 'GPS Tracking';
-    showToast('Kort slettet');
+    updateLockUI();
+    updateGPSUI();
+    showToast(translations[lang].toast_deleted);
+    renderSavedMaps();
 }
 
 // ============ DRAWER ============
