@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="MapSnap — Overlay fotograferede kort på digitale kort med live GPS-tracking">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>MapSnap — Kort Overlay</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Map Container -->
+    <div id="map"></div>
+    
+    <!-- Overlay Image (positioned absolutely over the map) -->
+    <div id="overlay-container">
+        <img id="overlay-image" src="" alt="Kort overlay" draggable="false">
+    </div>
+
+    <!-- GPS Marker (rendered on top of overlay) -->
+    <div id="gps-marker" class="hidden">
+        <div class="gps-marker-dot"></div>
+        <div class="gps-marker-pulse"></div>
+        <div class="gps-marker-accuracy"></div>
+    </div>
+
+    <!-- Top Bar -->
+    <header id="top-bar">
+        <button id="btn-menu" class="icon-btn" aria-label="Menu" title="Mine kort">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1 id="app-title">MapSnap</h1>
+        <button id="btn-add" class="icon-btn primary-btn" aria-label="Tilføj kort" title="Nyt overlay">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+    </header>
+
+    <!-- Bottom Controls Panel -->
+    <div id="controls-panel" class="hidden">
+        <div class="controls-header">
+            <span class="controls-title">Overlay-kontroller</span>
+            <button id="btn-close-controls" class="icon-btn small" aria-label="Luk">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- Opacity Slider -->
+        <div class="control-row">
+            <label for="opacity-slider">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.5"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity="0.8"/></svg>
+                Gennemsigtighed
+            </label>
+            <input type="range" id="opacity-slider" min="0" max="100" value="70" class="slider">
+            <span id="opacity-value" class="slider-value">70%</span>
+        </div>
+
+        <!-- Rotation Slider -->
+        <div class="control-row">
+            <label for="rotation-slider">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
+                Rotation
+            </label>
+            <input type="range" id="rotation-slider" min="-180" max="180" value="0" step="0.5" class="slider">
+            <span id="rotation-value" class="slider-value">0°</span>
+        </div>
+
+        <!-- Scale Slider -->
+        <div class="control-row">
+            <label for="scale-slider">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                Skalering
+            </label>
+            <input type="range" id="scale-slider" min="10" max="500" value="100" class="slider">
+            <span id="scale-value" class="slider-value">100%</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="control-actions">
+            <button id="btn-lock" class="action-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Lås overlay</span>
+            </button>
+            <button id="btn-gps" class="action-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/><circle cx="12" cy="12" r="8"/></svg>
+                <span>GPS Tracking</span>
+            </button>
+            <button id="btn-save" class="action-btn accent">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span>Gem kort</span>
+            </button>
+            <button id="btn-delete" class="action-btn danger">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg>
+                <span>Slet</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Image Source Modal -->
+    <div id="modal-source" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h2>Tilføj kort-billede</h2>
+            <p>Tag et billede af et fysisk kort, eller vælg fra dit galleri.</p>
+            <div class="modal-actions">
+                <button id="btn-camera" class="modal-btn">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span>Kamera</span>
+                </button>
+                <button id="btn-gallery" class="modal-btn">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Galleri</span>
+                </button>
+            </div>
+            <button id="btn-cancel-source" class="text-btn">Annuller</button>
+        </div>
+    </div>
+
+    <!-- Crop Modal -->
+    <div id="modal-crop" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content crop-modal">
+            <h2>Beskær billede</h2>
+            <div id="crop-area">
+                <canvas id="crop-canvas"></canvas>
+                <div id="crop-mask-top" class="crop-mask"></div>
+                <div id="crop-mask-bottom" class="crop-mask"></div>
+                <div id="crop-mask-left" class="crop-mask"></div>
+                <div id="crop-mask-right" class="crop-mask"></div>
+                <div id="crop-selection">
+                    <div class="crop-handle top-left" data-handle="tl"></div>
+                    <div class="crop-handle top-right" data-handle="tr"></div>
+                    <div class="crop-handle bottom-left" data-handle="bl"></div>
+                    <div class="crop-handle bottom-right" data-handle="br"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-crop-cancel" class="text-btn">Annuller</button>
+                <button id="btn-crop-confirm" class="modal-btn accent">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Brug billede</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Maps Drawer -->
+    <div id="drawer" class="hidden">
+        <div class="drawer-backdrop"></div>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h2>Mine kort</h2>
+                <button id="btn-close-drawer" class="icon-btn small" aria-label="Luk">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div id="saved-maps-list">
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <p>Ingen gemte kort endnu</p>
+                    <p class="subtext">Tryk + for at tilføje dit første kort</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="file-input" accept="image/*" hidden>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
