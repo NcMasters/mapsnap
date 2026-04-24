@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapsnap-v3';
+const CACHE_NAME = 'mapsnap-v4';
 const ASSETS = [
     './',
     './index.html',
@@ -25,7 +25,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
     // Network-first for tile requests, cache-first for app assets
-    if (e.request.url.includes('cartocdn.com')) {
+    if (e.request.url.includes('tile.openstreetmap.org')) {
         e.respondWith(
             fetch(e.request).then(res => {
                 const clone = res.clone();

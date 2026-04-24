@@ -119,6 +119,11 @@ html, body {
     border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important;
 }
 
+/* Dark Mode Filter for standard OSM tiles */
+.map-tiles-dark {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
 /* === Overlay Container === */
 #overlay-container {
     position: absolute;

@@ -47,9 +47,10 @@ function initMap() {
         zoomControl: true,
         attributionControl: false
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap, © CARTO'
+        attribution: '© OpenStreetMap contributors',
+        className: 'map-tiles-dark' // Added for CSS filtering
     }).addTo(state.map);
     L.control.attribution({ position: 'bottomright', prefix: false }).addTo(state.map);
     // Update overlay position when map moves
