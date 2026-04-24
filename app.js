@@ -111,9 +111,12 @@ const translations = {
 
 function init() {
     initMap();
-    initEventListeners();
     initDB();
-    setLanguage(state.currentLanguage);
+    bindEvents();
+    // Wait for DB to initialize before rendering
+    setTimeout(() => {
+        setLanguage(state.currentLanguage);
+    }, 100);
 }
 
 function setLanguage(lang) {
@@ -142,7 +145,6 @@ function setLanguage(lang) {
 
     updateLockUI();
     updateGPSUI();
-    renderSavedMaps();
     
     $('btn-lang-en').classList.toggle('active', lang === 'en');
     $('btn-lang-da').classList.toggle('active', lang === 'da');
@@ -542,6 +544,9 @@ function onMouseMove(e) {
     if (!mouseDragging) return;
     state.overlay.x = state.touch.startOvX + (e.clientX - state.touch.startX);
     state.overlay.y = state.touch.startOvY + (e.clientY - state.touch.startY);
+    applyOverlayTransform();
+}
+
 function onMouseUp() { mouseDragging = false; }
 
 // ============ LOCK / UNLOCK ============
@@ -711,19 +716,22 @@ async function deleteOverlay() {
     updateLockUI();
     updateGPSUI();
     showToast(translations[lang].toast_deleted);
-    renderSavedMaps();
+    if (!drawer.classList.contains('hidden')) {
+        openDrawer();
+    }
 }
 
 // ============ DRAWER ============
 async function openDrawer() {
     drawer.classList.remove('hidden');
     const overlays = await dbGetAll();
+    const lang = state.currentLanguage;
     if (overlays.length === 0) {
-        savedMapsList.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><p>Ingen gemte kort endnu</p><p class="subtext">Tryk + for at tilføje dit første kort</p></div>';
+        savedMapsList.innerHTML = `<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><p>${translations[lang].empty_state}</p><p class="subtext">${translations[lang].empty_subtext}</p></div>`;
         return;
     }
     savedMapsList.innerHTML = overlays.sort((a, b) => b.created - a.created).map(o => {
-        const date = new Date(o.created).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const date = new Date(o.created).toLocaleDateString(lang === 'da' ? 'da-DK' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         const lat = (o.anchorLat || o.mapCenter[0]).toFixed(4);
         const lng = (o.anchorLng || o.mapCenter[1]).toFixed(4);
         return `<div class="saved-map-card" data-id="${o.id}">
