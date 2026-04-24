@@ -1,6 +1,6 @@
-# 🗺️ MapSnap
+# 🗺️ GeoLayer
 
-**MapSnap** is a modern, open-source Progressive Web App (PWA) that allows you to bring physical maps into the digital world. 
+**GeoLayer** is a modern, open-source Progressive Web App (PWA) that allows you to bring physical maps into the digital world. 
 
 Take a photo of a park map, a festival overview, or a tourist map, overlay it as a transparent layer on an interactive digital map, and track your live GPS position directly on the photographed map.
 
